@@ -8,6 +8,7 @@ import random
 from torch.utils.data import Dataset, DataLoader
 import time
 from skimage.util.shape import view_as_windows
+import itertools
 
 class eval_mode(object):
     def __init__(self, *models):
@@ -89,7 +90,7 @@ class ReplayBuffer(Dataset):
         self.idx = 0
         self.last_save = 0
         self.full = False
-
+        self.tailcut_start = False
 
     def add(self, obs, action, reward, next_obs, done):
        
@@ -101,6 +102,8 @@ class ReplayBuffer(Dataset):
 
         self.idx = (self.idx + 1) % self.capacity
         self.full = self.full or self.idx == 0
+        if self.idx > 2 * self.batch_size:
+            self.tailcut_start = True
 
     def sample_proprio(self):
         
@@ -149,17 +152,44 @@ class ReplayBuffer(Dataset):
 
         return obses, actions, rewards, next_obses, not_dones, cpc_kwargs
 
-    def sample_rad(self, aug_funcs):
+    def sample_rad(self, aug_funcs, critic, full_aug):
         
         # augs specified as flags
         # curl_sac organizes flags into aug funcs
         # passes aug funcs into sampler
+        """
+        if full_aug or self.tailcut_start == False:
+            idxs = np.random.randint(
+                0, self.capacity if self.full else self.idx, size= self.batch_size
+            )
+        else:
+            #print('buffer full and tailcut')
+            idxs = np.random.randint(
+                0, self.capacity if self.full else self.idx, size= 2 * self.batch_size
+            )
+            with torch.no_grad():
+                obses = self.obses[idxs]
+                obses = torch.as_tensor(obses, device=self.device).float()
+                obses = obses / 255.
+                actions = torch.as_tensor(self.actions[idxs], device=self.device)
+                current_Q1, current_Q2 = critic(
+                    obses, actions, detach_encoder=False)
+                q = current_Q1 + current_Q2
+                sorted_q, indices_q = torch.sort(q)
+                indices_q = indices_q[ int(0.5 * self.batch_size) : int(1.5 * self.batch_size)]
+                idxs = idxs[list(itertools.chain(*indices_q.tolist()))]
+        """
 
+        if full_aug or self.tailcut_start == False:
+            idxs = np.random.randint(
+                0, self.capacity if self.full else self.idx, size= self.batch_size
+            )
+        else:
+            
+            idxs = np.random.randint(
+                0, self.capacity if self.full else self.idx, size= 2 * self.batch_size
+            )
 
-        idxs = np.random.randint(
-            0, self.capacity if self.full else self.idx, size= self.batch_size
-        )
-      
         obses = self.obses[idxs]
         next_obses = self.next_obses[idxs]
         if aug_funcs:
@@ -182,6 +212,22 @@ class ReplayBuffer(Dataset):
 
         obses = obses / 255.
         next_obses = next_obses / 255.
+
+        if full_aug == False and self.tailcut_start == True:
+            
+            with torch.no_grad():
+                current_Q1, current_Q2 = critic(
+                    obses, actions, detach_encoder=False)
+                q = current_Q1 + current_Q2
+                sorted_q, indices_q = torch.sort(q)
+                indices_q = indices_q[ int(0.5 * self.batch_size) : int(1.5 * self.batch_size)]
+                new_idxs = list(itertools.chain(*indices_q.tolist()))
+
+                obses = obses[new_idxs]
+                next_obses = next_obses[new_idxs]
+                actions = actions[new_idxs]
+                rewards = rewards[new_idxs]
+                not_dones = not_dones[new_idxs]
 
         # augmentations go here
         if aug_funcs:

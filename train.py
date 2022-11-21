@@ -297,11 +297,12 @@ def main():
 
         # run training update
         plot_dist = True if step % 1000 == 0 else False
+        full_aug = True if step % 100 == 0 else False
         if step >= args.init_steps:
             num_updates = 1 
 
             for _ in range(num_updates):
-                agent.update(replay_buffer, L, step, plot_dist)
+                agent.update(replay_buffer, L, step, plot_dist, full_aug, args.domain_name)
 
         next_obs, reward, done, _ = env.step(action)
 

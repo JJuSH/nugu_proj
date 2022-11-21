@@ -386,7 +386,7 @@ class RadSacAgent(object):
             mu, pi, _, _ = self.actor(obs, compute_log_pi=False)
             return pi.cpu().data.numpy().flatten()
 
-    def update_critic(self, obs, action, reward, next_obs, not_done, L, step, plot_dist):
+    def update_critic(self, obs, action, reward, next_obs, not_done, L, step, plot_dist, domain_name):
         with torch.no_grad():
             _, policy_action, log_pi, _ = self.actor(next_obs)
             target_Q1, target_Q2 = self.critic_target(next_obs, policy_action)
@@ -411,18 +411,18 @@ class RadSacAgent(object):
         self.critic.log(L, step)
         #############
         if plot_dist:
-            self.plot_critic_dist(current_Q1, current_Q2, './q_dist', step)
+            self.plot_critic_dist(current_Q1, current_Q2, './q_dist', step, domain_name)
 
-    def plot_critic_dist(self, q1, q2, save_path, step):
-        filename = 'q_val_step' + str(step)
+    def plot_critic_dist(self, q1, q2, save_path, step, domain_name):
+        filename = domain_name + '_q_val_step' + str(step)
         save_filename = save_path + '/' + filename
 
-        plt.title('q dist step:' + str(step))
+        plt.title(domain_name + '_q dist step:' + str(step))
         plt.xlabel('q value')
         plt.ylabel('count')
-        #import pdb; pdb.set_trace()
-        plt.hist(list(itertools.chain(*q1.tolist())), bins = 30)
-        #sns.displot(q1.tolist(), kde = True, color = 'blue')
+        plt.hist(list(itertools.chain(*q1.tolist())), bins = 30, label = 'q1')
+        plt.hist(list(itertools.chain(*q2.tolist())), bins = 30, label = 'q2')
+        plt.legend(loc = 'upper left')
         plt.savefig(save_filename)
         plt.clf()
 
@@ -485,16 +485,16 @@ class RadSacAgent(object):
             L.log('train/curl_loss', loss, step)
             
 
-    def update(self, replay_buffer, L, step, plot_dist):
+    def update(self, replay_buffer, L, step, plot_dist, full_aug, domain_name):
         if self.encoder_type == 'pixel':
-            obs, action, reward, next_obs, not_done = replay_buffer.sample_rad(self.augs_funcs)
+            obs, action, reward, next_obs, not_done = replay_buffer.sample_rad(self.augs_funcs, self.critic, full_aug)
         else:
             obs, action, reward, next_obs, not_done = replay_buffer.sample_proprio()
     
         if step % self.log_interval == 0:
             L.log('train/batch_reward', reward.mean(), step)
 
-        self.update_critic(obs, action, reward, next_obs, not_done, L, step, plot_dist)
+        self.update_critic(obs, action, reward, next_obs, not_done, L, step, plot_dist, domain_name)
 
         if step % self.actor_update_freq == 0:
             self.update_actor_and_alpha(obs, L, step)
