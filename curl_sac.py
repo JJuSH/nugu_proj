@@ -4,6 +4,8 @@ import torch.nn as nn
 import torch.nn.functional as F
 import copy
 import math
+import matplotlib.pyplot as plt
+import itertools
 
 import utils
 from encoder import make_encoder
@@ -384,7 +386,7 @@ class RadSacAgent(object):
             mu, pi, _, _ = self.actor(obs, compute_log_pi=False)
             return pi.cpu().data.numpy().flatten()
 
-    def update_critic(self, obs, action, reward, next_obs, not_done, L, step):
+    def update_critic(self, obs, action, reward, next_obs, not_done, L, step, plot_dist):
         with torch.no_grad():
             _, policy_action, log_pi, _ = self.actor(next_obs)
             target_Q1, target_Q2 = self.critic_target(next_obs, policy_action)
@@ -407,6 +409,23 @@ class RadSacAgent(object):
         self.critic_optimizer.step()
 
         self.critic.log(L, step)
+        #############
+        if plot_dist:
+            self.plot_critic_dist(current_Q1, current_Q2, './q_dist', step)
+
+    def plot_critic_dist(self, q1, q2, save_path, step):
+        filename = 'q_val_step' + str(step)
+        save_filename = save_path + '/' + filename
+
+        plt.title('q dist step:' + str(step))
+        plt.xlabel('q value')
+        plt.ylabel('count')
+        #import pdb; pdb.set_trace()
+        plt.hist(list(itertools.chain(*q1.tolist())), bins = 30)
+        #sns.displot(q1.tolist(), kde = True, color = 'blue')
+        plt.savefig(save_filename)
+        plt.clf()
+
 
     def update_actor_and_alpha(self, obs, L, step):
         # detach encoder, so we don't update it with the actor loss
@@ -464,9 +483,9 @@ class RadSacAgent(object):
         self.cpc_optimizer.step()
         if step % self.log_interval == 0:
             L.log('train/curl_loss', loss, step)
+            
 
-
-    def update(self, replay_buffer, L, step):
+    def update(self, replay_buffer, L, step, plot_dist):
         if self.encoder_type == 'pixel':
             obs, action, reward, next_obs, not_done = replay_buffer.sample_rad(self.augs_funcs)
         else:
@@ -475,7 +494,7 @@ class RadSacAgent(object):
         if step % self.log_interval == 0:
             L.log('train/batch_reward', reward.mean(), step)
 
-        self.update_critic(obs, action, reward, next_obs, not_done, L, step)
+        self.update_critic(obs, action, reward, next_obs, not_done, L, step, plot_dist)
 
         if step % self.actor_update_freq == 0:
             self.update_actor_and_alpha(obs, L, step)

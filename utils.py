@@ -49,7 +49,7 @@ def module_hash(module):
 
 def make_dir(dir_path):
     try:
-        os.mkdir(dir_path)
+        os.makedirs(dir_path)
     except OSError:
         pass
     return dir_path
@@ -90,8 +90,6 @@ class ReplayBuffer(Dataset):
         self.last_save = 0
         self.full = False
 
-
-    
 
     def add(self, obs, action, reward, next_obs, done):
        
@@ -151,7 +149,7 @@ class ReplayBuffer(Dataset):
 
         return obses, actions, rewards, next_obses, not_dones, cpc_kwargs
 
-    def sample_rad(self,aug_funcs):
+    def sample_rad(self, aug_funcs):
         
         # augs specified as flags
         # curl_sac organizes flags into aug funcs
@@ -159,7 +157,7 @@ class ReplayBuffer(Dataset):
 
 
         idxs = np.random.randint(
-            0, self.capacity if self.full else self.idx, size=self.batch_size
+            0, self.capacity if self.full else self.idx, size= self.batch_size
         )
       
         obses = self.obses[idxs]

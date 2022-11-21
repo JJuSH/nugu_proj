@@ -10,7 +10,7 @@ import time
 import json
 import dmc2gym
 import copy
-
+import matplotlib
 import utils
 from logger import Logger
 from video import VideoRecorder
@@ -182,6 +182,9 @@ def make_agent(obs_shape, action_shape, args, device):
 
 def main():
     args = parse_args()
+    #args.save_video = True
+    #args.save_model = True
+    #args.save_buffer = True
     if args.seed == -1: 
         args.__dict__["seed"] = np.random.randint(1,1000000)
     utils.set_seed_everywhere(args.seed)
@@ -213,14 +216,13 @@ def main():
     exp_name = env_name + '-' + ts + '-im' + str(args.image_size) +'-b'  \
     + str(args.batch_size) + '-s' + str(args.seed)  + '-' + args.encoder_type
     args.work_dir = args.work_dir + '/'  + exp_name
-
+    #import pdb; pdb.set_trace()
     utils.make_dir(args.work_dir)
     video_dir = utils.make_dir(os.path.join(args.work_dir, 'video'))
     model_dir = utils.make_dir(os.path.join(args.work_dir, 'model'))
     buffer_dir = utils.make_dir(os.path.join(args.work_dir, 'buffer'))
 
     video = VideoRecorder(video_dir if args.save_video else None)
-
     with open(os.path.join(args.work_dir, 'args.json'), 'w') as f:
         json.dump(vars(args), f, sort_keys=True, indent=4)
 
@@ -294,10 +296,12 @@ def main():
                 action = agent.sample_action(obs / 255.)
 
         # run training update
+        plot_dist = True if step % 1000 == 0 else False
         if step >= args.init_steps:
             num_updates = 1 
+
             for _ in range(num_updates):
-                agent.update(replay_buffer, L, step)
+                agent.update(replay_buffer, L, step, plot_dist)
 
         next_obs, reward, done, _ = env.step(action)
 

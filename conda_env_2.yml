@@ -1,4 +1,4 @@
-name: rad
+name: rad_2
 channels:
   - defaults
 dependencies:
@@ -19,3 +19,4 @@ dependencies:
     - torchvision
     - scikit-image
     - tabulate
+    - matplotlib

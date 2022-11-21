@@ -1,6 +1,6 @@
 CUDA_VISIBLE_DEVICES=0 python train.py \
-    --domain_name cartpole \
-    --task_name swingup \
+    --domain_name cheetah \
+    --task_name run \
     --encoder_type pixel --work_dir ./tmp \
     --action_repeat 8 --num_eval_episodes 10 \
     --pre_transform_image_size 100 --image_size 84 \
