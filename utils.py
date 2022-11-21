@@ -157,29 +157,6 @@ class ReplayBuffer(Dataset):
         # augs specified as flags
         # curl_sac organizes flags into aug funcs
         # passes aug funcs into sampler
-        """
-        if full_aug or self.tailcut_start == False:
-            idxs = np.random.randint(
-                0, self.capacity if self.full else self.idx, size= self.batch_size
-            )
-        else:
-            #print('buffer full and tailcut')
-            idxs = np.random.randint(
-                0, self.capacity if self.full else self.idx, size= 2 * self.batch_size
-            )
-            with torch.no_grad():
-                obses = self.obses[idxs]
-                obses = torch.as_tensor(obses, device=self.device).float()
-                obses = obses / 255.
-                actions = torch.as_tensor(self.actions[idxs], device=self.device)
-                current_Q1, current_Q2 = critic(
-                    obses, actions, detach_encoder=False)
-                q = current_Q1 + current_Q2
-                sorted_q, indices_q = torch.sort(q)
-                indices_q = indices_q[ int(0.5 * self.batch_size) : int(1.5 * self.batch_size)]
-                idxs = idxs[list(itertools.chain(*indices_q.tolist()))]
-        """
-
         if tailcut_aug == False or self.tailcut_start == False:
             idxs = np.random.randint(
                 0, self.capacity if self.full else self.idx, size= self.batch_size
@@ -189,6 +166,9 @@ class ReplayBuffer(Dataset):
             idxs = np.random.randint(
                 0, self.capacity if self.full else self.idx, size= 2 * self.batch_size
             )
+            print("tailcut")
+            print("idx")
+            print(idxs)
 
         obses = self.obses[idxs]
         next_obses = self.next_obses[idxs]
@@ -213,16 +193,20 @@ class ReplayBuffer(Dataset):
         obses = obses / 255.
         next_obses = next_obses / 255.
 
-        if len(idxs) == 2 * self.batch_size:
+        if tailcut_aug and self.tailcut_start:
             
             with torch.no_grad():
                 current_Q1, current_Q2 = critic(
                     obses, actions, detach_encoder=False)
                 q = current_Q1 + current_Q2
-                sorted_q, indices_q = torch.sort(q)
+                sorted_q, indices_q = torch.sort(torch.squeeze(q))
                 indices_q = indices_q[ int(0.5 * self.batch_size) : int(1.5 * self.batch_size)]
-                new_idxs = list(itertools.chain(*indices_q.tolist()))
-
+                print("indices_q")
+                print(indices_q)
+                #new_idxs = list(itertools.chain(*indices_q.tolist()))
+                new_idxs = indices_q.tolist()
+                print("new idxs")
+                print(new_idxs)
                 obses = obses[new_idxs]
                 next_obses = next_obses[new_idxs]
                 actions = actions[new_idxs]
