@@ -152,7 +152,7 @@ class ReplayBuffer(Dataset):
 
         return obses, actions, rewards, next_obses, not_dones, cpc_kwargs
 
-    def sample_rad(self, aug_funcs, critic, full_aug):
+    def sample_rad(self, aug_funcs, critic, tailcut_aug):
         
         # augs specified as flags
         # curl_sac organizes flags into aug funcs
