@@ -180,7 +180,7 @@ class ReplayBuffer(Dataset):
                 idxs = idxs[list(itertools.chain(*indices_q.tolist()))]
         """
 
-        if full_aug or self.tailcut_start == False:
+        if tailcut_aug == False or self.tailcut_start == False:
             idxs = np.random.randint(
                 0, self.capacity if self.full else self.idx, size= self.batch_size
             )
@@ -213,7 +213,7 @@ class ReplayBuffer(Dataset):
         obses = obses / 255.
         next_obses = next_obses / 255.
 
-        if full_aug == False and self.tailcut_start == True:
+        if len(idxs) == 2 * self.batch_size:
             
             with torch.no_grad():
                 current_Q1, current_Q2 = critic(

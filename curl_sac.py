@@ -485,9 +485,9 @@ class RadSacAgent(object):
             L.log('train/curl_loss', loss, step)
             
 
-    def update(self, replay_buffer, L, step, plot_dist, full_aug, domain_name):
+    def update(self, replay_buffer, L, step, plot_dist, tailcut_aug, domain_name):
         if self.encoder_type == 'pixel':
-            obs, action, reward, next_obs, not_done = replay_buffer.sample_rad(self.augs_funcs, self.critic, full_aug)
+            obs, action, reward, next_obs, not_done = replay_buffer.sample_rad(self.augs_funcs, self.critic, tailcut_aug)
         else:
             obs, action, reward, next_obs, not_done = replay_buffer.sample_proprio()
     
