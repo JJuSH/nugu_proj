@@ -164,11 +164,11 @@ class ReplayBuffer(Dataset):
         else:
             
             idxs = np.random.randint(
-                0, self.capacity if self.full else self.idx, size= 2 * self.batch_size
+                0, self.capacity if self.full else self.idx, size = 184
             )
-            print("tailcut")
-            print("idx")
-            print(idxs)
+            #print("tailcut")
+            #print("idx")
+            #print(idxs)
 
         obses = self.obses[idxs]
         next_obses = self.next_obses[idxs]
@@ -200,13 +200,14 @@ class ReplayBuffer(Dataset):
                     obses, actions, detach_encoder=False)
                 q = current_Q1 + current_Q2
                 sorted_q, indices_q = torch.sort(torch.squeeze(q))
-                indices_q = indices_q[ int(0.5 * self.batch_size) : int(1.5 * self.batch_size)]
-                print("indices_q")
-                print(indices_q)
+                #indices_q = indices_q[ int(0.5 * self.batch_size) : int(1.5 * self.batch_size)]
+                indices_q = indices_q[ 28 : 156 ]
+                #print("indices_q")
+                #print(indices_q)
                 #new_idxs = list(itertools.chain(*indices_q.tolist()))
                 new_idxs = indices_q.tolist()
-                print("new idxs")
-                print(new_idxs)
+                #print("new idxs")
+                #print(new_idxs)
                 obses = obses[new_idxs]
                 next_obses = next_obses[new_idxs]
                 actions = actions[new_idxs]
