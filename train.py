@@ -211,7 +211,7 @@ def main():
     
     # make directory
     ts = time.gmtime() 
-    ts = time.strftime("%m-%d", ts)    
+    ts = time.strftime("%m-%d-%H%M", ts)    
     env_name = args.domain_name + '-' + args.task_name
     exp_name = env_name + '-' + ts + '-im' + str(args.image_size) +'-b'  \
     + str(args.batch_size) + '-s' + str(args.seed)  + '-' + args.encoder_type
